@@ -16,7 +16,7 @@ indexing:
   k: 10
 
 generation:
-  max_content_length: 2000
+  max_context_length: 2000
 
 evaluation:
   recall_k: [1, 3, 5, 10]

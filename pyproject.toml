@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Will you answer my questions?"
 requires-python = ">=3.12"
 dependencies = [
-	"pyyaml"
+	"pyyaml",
+	"pydantic",
 ]
 
 [dependency-groups]
