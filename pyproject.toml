@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
 	"pyyaml",
 	"pydantic",
+	"fire",
+	"bm25s",
 ]
 
 [dependency-groups]
