@@ -1,0 +1,17 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Will you answer my questions?"
+requires-python = ">=3.12"
+dependencies = [
+	"pyyaml"
+]
+
+[dependency-groups]
+dev = [
+    "flake8",
+    "mypy",
+]
+
+[tool.mypy]
+explicit_package_bases = true

@@ -1,0 +1,23 @@
+model:
+  name: "Qwen/Qwen3-0.6B"
+  max_new_tokens: 512
+  temperature: 0
+
+paths:
+  raw_dir: "data/raw/vllm-0.10.1"
+  processed_dir: "data/processed/"
+  chunks_dir: "data/processed/chunks"
+  index_dir: "data/processed/index"
+
+indexing:
+  max_chunk_size: 2000
+  chunk_overlap: 200
+  retrieval_method: "bm25"
+  k: 10
+
+generation:
+  max_content_length: 2000
+
+evaluation:
+  recall_k: [1, 3, 5, 10]
+  overlap_threshold: 0.05
