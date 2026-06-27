@@ -1,17 +1,16 @@
 VENV := .venv
 PY   := $(VENV)/bin/python
-
-CMDS := run debug install lint lint-strict clean
-ARGS := $(filter-out $(CMDS),$(MAKECMDGOALS))
+ARGS = awk 'BEGIN{RS=ORS="\0"} f&&$$0!="--"; $$0=="$@"{f=1}' /proc/$$PPID/cmdline | xargs -0
 
 usage:
-	@echo "Usage: make run [config_file]"
+	@echo 'Usage: make run <command> [args...]'
+	@echo 'e.g.   make run search "comment on fait stp" --k 10'
 
 run: $(VENV)
-	@uv run python -m src $(ARGS)
+	@$(ARGS) uv run python -m src || true
 
 debug: $(VENV)
-	@uv run python -m pdb -m src $(ARGS)
+	@$(ARGS) uv run python -m pdb -m src || true
 
 install $(VENV):
 	@uv sync
@@ -28,7 +27,9 @@ clean:
 	@rm -rf $(VENV)
 	@find . -type d \( -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache \) -exec rm -rf {} +
 
-$(ARGS):
+%: FORCE
 	@:
 
-.PHONY: $(CMDS)
+FORCE:
+
+.PHONY: usage run debug install lint lint-strict clean FORCE

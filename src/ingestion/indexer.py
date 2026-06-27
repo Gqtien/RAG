@@ -2,7 +2,7 @@ import bm25s
 from src.models import Chunk
 
 
-def index_chunks(chunks: list[Chunk], index_dir: str) -> None:
+def index_chunks(index_dir: str, chunks: list[Chunk]) -> None:
     texts = [chunk.text for chunk in chunks]
     corpus = [chunk.model_dump() for chunk in chunks]
     tokens = bm25s.tokenize(texts)

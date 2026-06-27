@@ -5,8 +5,10 @@ ALLOWED_SUFFIXES: list[str] = [".py", ".md", ".txt"]
 
 def load_files(path: str | Path) -> dict[str, str]:
     root = Path(path)
-    files_dump: dict[str, str] = {}
+    if not root.is_dir():
+        raise ValueError(f"{path!r} is not a valid directory.")
 
+    files_dump: dict[str, str] = {}
     for file in list_files(root):
         try:
             text = file.read_text(encoding="utf-8")
