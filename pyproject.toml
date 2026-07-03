@@ -9,6 +9,7 @@ dependencies = [
 	"fire",
 	"bm25s",
 	"tqdm",
+	"scikit-learn",
 ]
 
 [dependency-groups]

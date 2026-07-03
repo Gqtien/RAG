@@ -1,5 +1,5 @@
-import bm25s
 from pathlib import Path
+import bm25s
 from src.models import Chunk
 from .base import BaseRetriever
 
@@ -7,6 +7,14 @@ from .base import BaseRetriever
 class BM25Retriever(BaseRetriever):
     def __init__(self, bm25: bm25s.BM25) -> None:
         self.bm25 = bm25
+
+    @classmethod
+    def build(cls, chunks: list[Chunk], index_dir: str | Path) -> None:
+        texts = [chunk.text for chunk in chunks]
+        corpus = [chunk.model_dump() for chunk in chunks]
+        bm25 = bm25s.BM25(corpus=corpus)
+        bm25.index(bm25s.tokenize(texts))
+        bm25.save(index_dir, corpus=corpus)
 
     @classmethod
     def from_disk(cls, index_dir: str | Path) -> "BM25Retriever":
