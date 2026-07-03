@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Any
 from tqdm import tqdm
 from src.config import load_config
-from src.ingestion import chunk_files, index_chunks, load_files
-from src.retrieval import make_retriever
+from src.evaluation import evaluate as evaluate_recall
+from src.ingestion import chunk_files, load_files
+from src.retrieval import build_index, make_retriever
 from src.models import (
     Chunk,
     MinimalSearchResults,
@@ -23,7 +24,7 @@ class RagCLI:
 
         files = load_files(self.config.paths.raw_dir)
         chunks = chunk_files(self.config.indexing, files)
-        index_chunks(self.config.paths.index_dir, chunks)
+        build_index(self.config, chunks)
         print(
             f"Ingestion complete! {len(chunks)} chunks from {len(files)} "
             f"files saved under {self.config.paths.index_dir!r}"
@@ -78,7 +79,24 @@ class RagCLI:
         dataset_path: str | Path,
         k: int = 10,
     ) -> None:
-        raise NotImplementedError("att mec")
+        results = StudentSearchResults.model_validate_json(
+            read_file(student_search_results_path)
+        )
+        dataset = RagDataset.model_validate_json(read_file(dataset_path))
+        ks = [n for n in self.config.evaluation.recall_k if n <= k]
+        scores = evaluate_recall(
+            results,
+            dataset,
+            ks,
+            self.config.generation.max_context_length,
+            self.config.evaluation.overlap_threshold,
+        )
+
+        print("Evaluation Results")
+        print("=" * 15)
+        print(f"Questions evaluated: {len(results.search_results)}")
+        for n in ks:
+            print(f"Recall@{n}: {scores[n]:.3f}")
 
 
 def read_file(path: str | Path) -> str:
