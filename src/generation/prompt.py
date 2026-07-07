@@ -18,6 +18,10 @@ def format_context(chunks: list[Chunk], max_context_length: int) -> str:
     return "\n\n".join(parts)
 
 
-def build_prompt(question: str, chunks: list[Chunk], max_context_length: int) -> str:
+def build_prompt(
+    question: str,
+    chunks: list[Chunk],
+    max_context_length: int,
+) -> str:
     context = format_context(chunks, max_context_length)
     return f"{SYSTEM}\n\nContext:\n{context}\n\nQuestion: {question}"

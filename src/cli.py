@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from tqdm import tqdm
@@ -8,10 +9,12 @@ from src.retrieval import build_index, make_retriever
 from src.generation import build_prompt, generate
 from src.models import (
     Chunk,
+    MinimalAnswer,
     MinimalSearchResults,
     MinimalSource,
     RagDataset,
     StudentSearchResults,
+    StudentSearchResultsAndAnswer,
 )
 
 
@@ -79,7 +82,38 @@ class RagCLI:
         student_search_results_path: str | Path,
         save_directory: str | Path,
     ) -> None:
-        raise NotImplementedError("att mec")
+        results = StudentSearchResults.model_validate_json(
+            read_file(student_search_results_path)
+        )
+        total = len(results.search_results)
+        print(f"Loaded {total} questions from {student_search_results_path}")
+
+        raw_dir = self.config.paths.raw_dir
+        max_context_length = self.config.model.max_context_length
+        answers: list[MinimalAnswer] = []
+        for result in tqdm(results.search_results, desc="Answering"):
+            chunks = sources_to_chunks(raw_dir, result.retrieved_sources)
+            prompt = build_prompt(result.question, chunks, max_context_length)
+            answers.append(
+                MinimalAnswer(
+                    question_id=result.question_id,
+                    question=result.question,
+                    retrieved_sources=result.retrieved_sources,
+                    answer=generate(self.config.model, prompt),
+                )
+            )
+        print(f"Processed {len(answers)} of {total} questions")
+
+        output = StudentSearchResultsAndAnswer(
+            search_results=answers, k=results.k
+        )
+        name = Path(student_search_results_path).name
+        save_path = Path(save_directory) / name
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path.write_text(
+            output.model_dump_json(indent=2), encoding="utf-8"
+        )
+        print(f"Saved student_search_results_and_answer to {save_path}")
 
     def evaluate(
         self,
@@ -123,3 +157,32 @@ def to_sources(chunks: list[Chunk]) -> list[MinimalSource]:
         )
         for chunk in chunks
     ]
+
+
+@lru_cache(maxsize=None)
+def read_source_text(raw_dir: str, file_path: str) -> str | None:
+    try:
+        return (Path(raw_dir) / file_path).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def sources_to_chunks(
+    raw_dir: str, sources: list[MinimalSource]
+) -> list[Chunk]:
+    chunks: list[Chunk] = []
+    for source in sources:
+        text = read_source_text(raw_dir, source.file_path)
+        if text is None:
+            continue
+        chunks.append(
+            Chunk(
+                file_path=source.file_path,
+                first_character_index=source.first_character_index,
+                last_character_index=source.last_character_index,
+                text=text[
+                    source.first_character_index:source.last_character_index
+                ],
+            )
+        )
+    return chunks

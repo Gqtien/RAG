@@ -1,11 +1,12 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from functools import lru_cache
 from src.models import ModelConfig
+from functools import lru_cache
+from typing import Any
 
 
 @lru_cache(maxsize=1)
-def load(model_name: str):
+def load(model_name: str) -> tuple[Any, Any]:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.truncation_side = "left"
     model = AutoModelForCausalLM.from_pretrained(model_name, dtype="auto")
@@ -37,4 +38,4 @@ def generate(
             do_sample=False,
         )
     generated = out[0][inputs.input_ids.shape[1]:]
-    return tokenizer.decode(generated, skip_special_tokens=True).strip()
+    return str(tokenizer.decode(generated, skip_special_tokens=True)).strip()
