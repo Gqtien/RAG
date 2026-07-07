@@ -10,6 +10,8 @@ dependencies = [
 	"bm25s",
 	"tqdm",
 	"scikit-learn",
+	"torch",
+	"transformers",
 ]
 
 [dependency-groups]

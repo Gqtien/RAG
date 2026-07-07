@@ -1,6 +1,7 @@
 model:
   name: "Qwen/Qwen3-0.6B"
   max_new_tokens: 512
+  max_context_length: 2000
   temperature: 0
 
 paths:
@@ -14,9 +15,6 @@ indexing:
   chunk_overlap: 200
   retrieval_method: "bm25"
   k: 10
-
-generation:
-  max_context_length: 2000
 
 evaluation:
   recall_k: [1, 3, 5, 10]

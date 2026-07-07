@@ -8,6 +8,7 @@ class StrictModel(BaseModel):
 class ModelConfig(StrictModel):
     name: str = "Qwen/Qwen3-0.6B"
     max_new_tokens: int = 512
+    max_context_length: int = 2000
     temperature: float = 0.0
 
 
@@ -25,10 +26,6 @@ class IndexingConfig(StrictModel):
     k: int = 10
 
 
-class GenerationConfig(StrictModel):
-    max_context_length: int = 2000
-
-
 class EvaluationConfig(StrictModel):
     recall_k: list[int] = [1, 3, 5, 10]
     overlap_threshold: float = 0.05
@@ -38,5 +35,4 @@ class Config(StrictModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
     indexing: IndexingConfig = Field(default_factory=IndexingConfig)
-    generation: GenerationConfig = Field(default_factory=GenerationConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)

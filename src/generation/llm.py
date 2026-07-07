@@ -1,6 +1,7 @@
-from functools import lru_cache
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from functools import lru_cache
+from src.models import ModelConfig
 
 
 @lru_cache(maxsize=1)
@@ -13,26 +14,27 @@ def load(model_name: str):
 
 
 def generate(
+    config: ModelConfig,
     prompt: str,
-    model_name: str = "Qwen/Qwen3-0.6B",
-    max_new_tokens: int = 256,
-    max_input_tokens: int = 1024,
-    think: bool = False,
 ) -> str:
-    tokenizer, model = load(model_name)
+    tokenizer, model = load(config.name)
     text = tokenizer.apply_chat_template(
         [{"role": "user", "content": prompt}],
         tokenize=False,
         add_generation_prompt=True,
-        enable_thinking=think,
+        enable_thinking=False,
     )
     inputs = tokenizer(
         text,
         return_tensors="pt",
         truncation=True,
-        max_length=max_input_tokens,
+        max_length=config.max_context_length,
     ).to(model.device)
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-    generated = outputs[0][inputs.input_ids.shape[1]:]
+        out = model.generate(
+            **inputs,
+            max_new_tokens=config.max_new_tokens,
+            do_sample=False,
+        )
+    generated = out[0][inputs.input_ids.shape[1]:]
     return tokenizer.decode(generated, skip_special_tokens=True).strip()

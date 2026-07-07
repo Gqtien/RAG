@@ -5,6 +5,7 @@ from src.config import load_config
 from src.evaluation import evaluate as evaluate_recall
 from src.ingestion import chunk_files, load_files
 from src.retrieval import build_index, make_retriever
+from src.generation import build_prompt, generate
 from src.models import (
     Chunk,
     MinimalSearchResults,
@@ -64,7 +65,14 @@ class RagCLI:
         print(f"Saved student_search_results to {save_path}")
 
     def answer(self, query: str, k: int = 10) -> None:
-        raise NotImplementedError("att mec")
+        retriever = make_retriever(self.config)
+        chunks = retriever.search(query, k)
+        prompt = build_prompt(
+            query,
+            chunks,
+            self.config.model.max_context_length,
+        )
+        print(generate(self.config.model, prompt))
 
     def answer_dataset(
         self,
@@ -88,7 +96,7 @@ class RagCLI:
             results,
             dataset,
             ks,
-            self.config.generation.max_context_length,
+            self.config.model.max_context_length,
             self.config.evaluation.overlap_threshold,
         )
 
