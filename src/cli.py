@@ -37,7 +37,8 @@ class RagCLI:
     def search(self, query: str, k: int = 10) -> list[dict[str, Any]]:
         retriever = make_retriever(self.config)
         hits = retriever.search(query, k)
-        return [source.model_dump() for source in to_sources(hits)]
+        sources = to_sources(hits, self.config.paths.raw_dir)
+        return [source.model_dump() for source in sources]
 
     def search_dataset(
         self,
@@ -55,7 +56,9 @@ class RagCLI:
                 MinimalSearchResults(
                     question_id=question.question_id,
                     question=question.question,
-                    retrieved_sources=to_sources(hits),
+                    retrieved_sources=to_sources(
+                        hits, self.config.paths.raw_dir
+                    ),
                 )
             )
         output = StudentSearchResults(search_results=results, k=k)
@@ -88,11 +91,10 @@ class RagCLI:
         total = len(results.search_results)
         print(f"Loaded {total} questions from {student_search_results_path}")
 
-        raw_dir = self.config.paths.raw_dir
         max_context_length = self.config.model.max_context_length
         answers: list[MinimalAnswer] = []
         for result in tqdm(results.search_results, desc="Answering"):
-            chunks = sources_to_chunks(raw_dir, result.retrieved_sources)
+            chunks = sources_to_chunks(result.retrieved_sources)
             prompt = build_prompt(result.question, chunks, max_context_length)
             answers.append(
                 MinimalAnswer(
@@ -148,10 +150,10 @@ def read_file(path: str | Path) -> str:
     return file_path.read_text(encoding="utf-8")
 
 
-def to_sources(chunks: list[Chunk]) -> list[MinimalSource]:
+def to_sources(chunks: list[Chunk], raw_dir: str) -> list[MinimalSource]:
     return [
         MinimalSource(
-            file_path=chunk.file_path,
+            file_path=str(Path(raw_dir) / chunk.file_path),
             first_character_index=chunk.first_character_index,
             last_character_index=chunk.last_character_index,
         )
@@ -160,19 +162,17 @@ def to_sources(chunks: list[Chunk]) -> list[MinimalSource]:
 
 
 @lru_cache(maxsize=None)
-def read_source_text(raw_dir: str, file_path: str) -> str | None:
+def read_source_text(file_path: str) -> str | None:
     try:
-        return (Path(raw_dir) / file_path).read_text(encoding="utf-8")
+        return Path(file_path).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return None
 
 
-def sources_to_chunks(
-    raw_dir: str, sources: list[MinimalSource]
-) -> list[Chunk]:
+def sources_to_chunks(sources: list[MinimalSource]) -> list[Chunk]:
     chunks: list[Chunk] = []
     for source in sources:
-        text = read_source_text(raw_dir, source.file_path)
+        text = read_source_text(source.file_path)
         if text is None:
             continue
         chunks.append(
